@@ -1,11 +1,11 @@
 .PHONY: all
 
-all: secretServer 
+all: fixedSecretServer 
 
-secretServer: secretServer.c Makefile
-	gcc -Wall -Wextra -DBUFFSIZE=32 secretServer.c -o secretServer
+fixedSecretServer: fixedSecretServer.c Makefile
+	gcc -Wall -Wextra -DBUFFSIZE=32 fixedSecretServer.c -o fixedSecretServer
 
 
 clean:
 	/bin/rm -f *~
-	/bin/rm -f secretServer
+	/bin/rm -f fixedSecretServer

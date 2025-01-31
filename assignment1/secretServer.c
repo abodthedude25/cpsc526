@@ -57,9 +57,10 @@ void write_str_to_fd(int fd, const char * str)
     size_t remain = strlen(str);
     const char * ptr = str;
     while (remain > 0) {
-        ssize_t written = write(fd, ptr, remain);
+        ssize_t written = send(fd, ptr, remain, MSG_NOSIGNAL);
         if (written < 0) {
-            error(-1, errno, "write() failed");
+            printf("Rude client, disconnected while I was talking.\n");
+            return;
         }
         ptr += written;
         remain -= written;
@@ -86,12 +87,16 @@ int main(int argc, char ** argv)
     if (listen_sock_fd < 0) {
         error(-1, errno, "socket() failed");
     }
+    int reuse_enabled = 1;
+    setsockopt(listen_sock_fd, SOL_SOCKET, SO_REUSEADDR, &reuse_enabled,
+               sizeof(reuse_enabled));
     bzero((char *) &srv_addr, sizeof(srv_addr));
     srv_addr.sin_family = AF_INET;
     srv_addr.sin_addr.s_addr = htons(INADDR_ANY);
     srv_addr.sin_port = htons(globals.port);
     if (bind(listen_sock_fd, (struct sockaddr *) &srv_addr, sizeof(srv_addr))
-        < 0) {
+        < 0) 
+    {
         error(-1, errno, "could not bind() listening socket");
     }
 
@@ -101,7 +106,8 @@ int main(int argc, char ** argv)
     }
 
     while (1) {
-        printf("Waiting for a new connection...\n");
+        printf("Waiting for a new connection (BUFFSIZE=%u)...\n",
+               (unsigned int) BUFFSIZE);
         // wait for a connection
         int conn_sock_fd = accept(listen_sock_fd, NULL, NULL);
         if (conn_sock_fd < 0) {
