@@ -1,1 +1,1 @@
-printf 'secret\0.........................secret\n' | nc localhost 1235
+printf 'secret\0.........................secret' | nc localhost 1235
