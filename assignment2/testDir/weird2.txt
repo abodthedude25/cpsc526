@@ -1,0 +1,2 @@
+This file has filename that's tough to handle.
+'weird2.txt
