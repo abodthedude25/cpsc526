@@ -55,13 +55,17 @@ def handle_cd(lsock, args):
         lsock.send(f"cd: {str(e)}")
 
 def handle_cat(lsock, args):
+    filename = ' '.join(arg.strip() for arg in args[1:]).replace("'", "")   
     try:
-        with open(args[1], 'rb') as f:
+        with open(filename, 'rb') as f:
             content = f.read()
             lsock.send(base64.b64encode(content).decode('ascii'))
             lsock.send("#")
     except Exception as e:
+        print(e)
         lsock.send(f"cat: {str(e)}")
+        lsock.send("#")
+
 
 def handle_sha256(lsock, args):
     try:
