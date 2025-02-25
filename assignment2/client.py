@@ -73,11 +73,11 @@ def handle_command(lsock: LineSocket, cmd: str):
             print(lsock.recv())
         
         elif args[0] == "download":
-            if len(args) != 2:
+            if len(args) < 2:
                 print("Usage: download <filename>")
                 return
 
-            filename = args[1]
+            filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
             lsock.send(cmd)  # Send original command as is
 
             # First receive the hash
@@ -126,13 +126,14 @@ def handle_command(lsock: LineSocket, cmd: str):
                 print(f"Error saving file: {str(e)}")
 
         elif args[0] == "upload":
-            if len(args) != 2:
+            if len(args) < 2:
                 print("Usage: upload <filename>")
                 return
+            filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
 
             # Compute local file hash
             try:
-                with open(args[1], 'rb') as f:
+                with open(filename, 'rb') as f:
                     content = f.read()
                     local_hash = compute_sha256(content)
             except FileNotFoundError:

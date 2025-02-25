@@ -55,7 +55,7 @@ def handle_cd(lsock, args):
         lsock.send(f"cd: {str(e)}")
 
 def handle_cat(lsock, args):
-    filename = ' '.join(arg.strip() for arg in args[1:]).replace("'", "")   
+    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
         with open(filename, 'rb') as f:
             content = f.read()
@@ -68,21 +68,22 @@ def handle_cat(lsock, args):
 
 
 def handle_sha256(lsock, args):
+    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
-        with open(args[1], 'rb') as f:
+        with open(filename, 'rb') as f:
             content = f.read()
             digest = compute_sha256(content)
             lsock.send(digest)
     except Exception as e:
         lsock.send(f"sha256: {str(e)}")
 def handle_download(lsock, args):
-    if len(args) != 2:
+    if len(args) < 2:
         lsock.send("ERROR: Usage: download <filename>")
         return
-
+    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
         # First send hash
-        with open(args[1], 'rb') as f:
+        with open(filename, 'rb') as f:
             content = f.read()
             digest = compute_sha256(content)
             lsock.send(digest)
@@ -104,8 +105,10 @@ def handle_upload(lsock, args):
         client_hash = lsock.recv()
         
         # Check if file exists and compare hashes
+        filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
+        print(f'writing: {filename}')
         try:
-            with open(args[1], 'rb') as f:
+            with open(filename, 'rb') as f:
                 content = f.read()
                 server_hash = compute_sha256(content)
                 if server_hash == client_hash:
