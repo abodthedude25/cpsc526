@@ -12,40 +12,26 @@
 
 ### 1. **Secure Handshake with SHA256**
 
--   **Server-Side Handshake Workflow**:
-    -   Server generates a random 8-character alphanumeric challenge (e.g., `1234abcd`).
-    -   Sends the challenge to the client.
-    -   Client appends the shared secret (`SECRET526`) to the challenge and computes SHA256.
-    -   Client sends the computed hash back to the server.
-    -   Server compares the received hash with its own hash (challenge + secret). If they match, sends "OK"; otherwise, disconnects.
--   **Security Mechanism**: Prevents unauthorized access by verifying client authenticity without exposing the secret directly.
+## The server and client establish a secure connection using a shared secret (SECRET526) verified via a SHA256 challenge-response protocol. When a client connects, the server generates an 8-character random challenge and sends it to the client. The client appends the shared secret to this challenge, computes its SHA256 hash, and returns it to the server. The server then compares this hash with its own computation of the challenge + secret. If they match, the handshake succeeds, and communication proceeds.
 
----
-
-### 2. **Command Support**
+### 2. **Command **
 
 #### **pwd**
 
+The pwd command retrieves the server’s current working directory. When the client sends this command, the server immediately responds with its full path (e.g., /home/issam). This command is straightforward and serves as a basic test of server responsiveness.
+
 -   **Usage**: `pwd`
--   **Client-Side**:
-    -   Sends "pwd" command to the server.
--   **Server-Side**:
-    -   Immediately responds with the server’s current working directory (e.g., `/home/issam/`).
-    -   Handles errors (e.g., permissions) and returns appropriate messages.
 -   **Example**:
     ```bash
     > pwd
-    Output: /home/services/
+    Output: /home/issam/
     ```
 
 #### **cd**
 
+The cd command changes the server’s working directory. The client sends the target directory name, and the server attempts to navigate to it. If successful, the server returns the new path; otherwise, it sends an error message (e.g., No such file or directory). This command also handles unusual directory names.
+
 -   **Usage**: `cd <dirname>`
--   **Client-Side**:
-    -   Sends the directory name (unusual names for directories are supported) to the server.
--   **Server-Side**:
-    -   Attempts to change the working directory.
-    -   Responds with the new directory path if successful, or an error message (e.g., `cd: No such file or directory`).
 -   **Example**:
     ```bash
     > cd proj
@@ -56,12 +42,9 @@
 
 #### **ls**
 
+The ls command lists the contents of the server’s current directory. The client can pass options (e.g., -l, -a) directly to the server, which executes the corresponding ls command on its filesystem. The server sends each line of output followed by a --- delimiter to signal completion.
+
 -   **Usage**: `ls [options]`
--   **Client-Side**:
-    -   Sends the command with optional arguments (e.g., `ls`).
--   **Server-Side**:
-    -   Executes `ls` on the server’s filesystem with provided options.
-    -   Sends each line of output followed by `---` to signify the end.
 -   **Example**:
     ```bash
     > ls -l
@@ -78,12 +61,9 @@
 
 #### **cat**
 
+The cat command retrieves the contents of a file on the server. The server reads the file, Base64-encodes its contents, and sends it line-by-line to the client, ending with a # delimiter. The client decodes the content and displays it. If the file is binary, the client alerts the user instead of attempting to render it.
+
 -   **Usage**: `cat <filename>`
--   **Client-Side**:
-    -   Sends the filename to the server.
--   **Server-Side**:
-    -   Reads the file content, Base64-encodes it, and sends lines until `#` is sent.
-    -   Decodes on client-side and prints.
 -   **Example**:
     `bash
     > cat weird2.txt
@@ -93,12 +73,9 @@ This file has filename that's tough to handle.
 
 #### **sha256**
 
+The sha256 command computes the SHA256 hash of a file on the server. The server reads the file, computes its hash, and returns it to the client. If the file does not exist, the server sends an error message.
+
 -   **Usage**: `sha256 <filename>`
--   **Client-Side**:
-    -   Sends filename to server.
--   **Server-Side**:
-    -   Computes SHA256 hash of the file and returns it.
-    -   If file not found, returns an error message.
 -   **Example**:
     ```bash
     > sha256 code.cpp
@@ -107,14 +84,9 @@ This file has filename that's tough to handle.
 
 #### **download**
 
+The download command implements smart file transfer by comparing hashes before downloading. The client requests the file, and the server responds with its SHA256 hash. The client checks if a local file with the same name exists and matches the hash. If they match, the client skips the download; otherwise, it requests the file content. The server sends the file encoded in Base64, which the client decodes and saves.
+
 -   **Usage**: `download <filename>`
--   **Client-Side**:
-    -   Initiates download request.
-    -   Supports unusual file names
-    -   If local file exists and matches server hash, skips transfer.
--   **Server-Side**:
-    -   Sends SHA256 hash of the file.
-    -   If client accepts, sends Base64-encoded content, finalized with `#`.
 -   **Example**:
     ```bash
     > download penguin.jpg
@@ -125,14 +97,9 @@ This file has filename that's tough to handle.
 
 #### **upload**
 
+The upload command mirrors the download process but in reverse. The client computes the SHA256 hash of the local file and sends it to the server. If the server’s file matches the hash, the upload is skipped. Otherwise, the client sends the file content encoded in Base64, which the server decodes and writes to disk
+
 -   **Usage**: `upload <filename>`
--   **Client-Side**:
-    -   Sends SHA256 hash of the local file to server.
-    -   Supports unusual file names
-    -   If server’s hash differs, sends Base64-encoded content.
--   **Server-Side**:
-    -   Checks if existing file matches hash.
-    -   Writes new content if necessary and sends "OK" or error.
 -   **Example**:
     ```bash
     > upload penguin.jpg
@@ -145,41 +112,23 @@ This file has filename that's tough to handle.
 
 ### 3. **Smart File Transfer Mechanism**
 
--   **Hash Comparison**:
-    -   Both download and upload commands compare file hashes before transferring data.
-    -   Reduces unnecessary transfers, enhancing efficiency.
--   **Binary Support**:
-    -   Files with binary content (e.g., images, PDFs) are transferred intact using Base64 encoding.
+Both download and upload commands leverage SHA256 hashes to determine whether a file transfer is necessary. By comparing hashes, the system avoids transferring files that already exist and match on both ends. This optimization is particularly useful for large files or slow network connections. Additionally, all file transfers use Base64 encoding to preserve binary data integrity, ensuring that files like images, executables, and compressed archives are transferred without corruption.
 
 ---
 
 ### 4. **Protocol Design**
 
--   **Text-Based Communication**:
-    -   Uses line-based protocol with clear delimiters (`---`, `#`).
-    -   Example server response after `ls`:
-        ```
-        -rw------- ...
-        drwxr-xr-x ...
-        ---
-        ```
--   **Error Handling**:
-    -   Server sends error messages (e.g., `ERROR: File not found`).
-    -   Client formats and displays errors to the user.
+The client and server communicate using a simple text-based protocol with clear delimiters. Commands and responses are sent line-by-line, with special markers like # and --- to signal the end of content. For example, when listing directory contents with ls, the server sends each line followed by --- to indicate completion. Similarly, file contents are sent in Base64-encoded chunks terminated by #. Error handling is integrated into the protocol. If a command fails (e.g., invalid directory, permission denied), the server sends an error message (e.g., ERROR: Permission denied), which the client displays to the user.
 
 ---
 
 ### 5. **Security and Environment Variables**
 
--   **Secret Management**:
-    -   Secret is sourced from `SECRET526` environment variable, a file `.secret526`, or hardcoded when running the command.
-    -   Example configuration:
-        ```bash
+There are multiple options to source the secret to the code: - Secret is sourced from `SECRET526` environment variable, a file `.secret526`, or hardcoded when running the command. - Example configuration:
+`bash
         export SECRET526=mySecureSecret123
         SECRET526=111111 ../server.py -d 2222
-        ```
--   **Hidden Authentication**:
-    -   Environment variable approach prevents command-line snooping, increasing security.
+        `
 
 ---
 
@@ -187,20 +136,9 @@ This file has filename that's tough to handle.
 
 -   **Examples Tested**:
     -   `weird .txt` (with space)
-    -   ` weird 3. txt"` (leading whitespace)
+    -   `\ weird\ 3.\ txt` (leading whitespace with backslash)
     -   `weird~!@#.file` (special characters)
 -   **Handling**: Filenames are sanitized by stripping backslashes and spaces are preserved.
-
----
-
-### 7. **Error Scenarios Handled**
-
-1. **File/Directory Not Found**:
-    - `"cd /invalid" → "No such file or directory"`.
-2. **Permission Errors**:
-    - `"cat /private" → "Permission denied"`.
-3. **Client Disconnects Mid-Transfer**:
-    - Server closes connection gracefully and resumes listening.
 
 ---
 
