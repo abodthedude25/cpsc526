@@ -36,12 +36,11 @@ def handshake(lsock: LineSocket, secret: str):
     print("Connected...")
 
 def handle_command(lsock: LineSocket, cmd: str):
-    args = cmd.split()
-    if not args:
-        return
+    parts = cmd.split(maxsplit=1)
+    command = parts[0] if parts else ""
 
     try:
-        if args[0] == "ls":
+        if command == "ls":
             lsock.send(cmd)
             while True:
                 line = lsock.recv()
@@ -49,11 +48,11 @@ def handle_command(lsock: LineSocket, cmd: str):
                     break
                 print(line)
         
-        elif args[0] in ["pwd", "cd"]:
+        elif command in ["pwd", "cd"]:
             lsock.send(cmd)
             print(lsock.recv())
         
-        elif args[0] == "cat":
+        elif command == "cat":
             lsock.send(cmd)
             content = ""
             while True:
@@ -62,22 +61,24 @@ def handle_command(lsock: LineSocket, cmd: str):
                     break
                 content += line
             try:
-                print(base64.b64decode(content).decode('utf-8'))
-            except UnicodeDecodeError:
-                print("Binary file content not displayed")
+                # Decode the base64 content
+                binary_content = base64.b64decode(content)
+                # For binary files, output directly to stdout buffer
+                sys.stdout.buffer.write(binary_content)
             except Exception as e:
                 print(content)
-        
-        elif args[0] == "sha256":
+                
+        elif command == "sha256":
             lsock.send(cmd)
             print(lsock.recv())
         
-        elif args[0] == "download":
-            if len(args) < 2:
+        elif command == "download":
+            parts = cmd.split(maxsplit=1)
+            if len(parts) != 2:
                 print("Usage: download <filename>")
                 return
 
-            filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
+            filename = parts[1].replace("\ "," ")
             lsock.send(cmd)  # Send original command as is
 
             # First receive the hash
@@ -119,18 +120,18 @@ def handle_command(lsock: LineSocket, cmd: str):
             # Save the file
             try:
                 binary_content = base64.b64decode(content)
-                with open(filename, 'wb') as f:
+                with open(filename.split("/")[-1], 'wb') as f:
                     f.write(binary_content)
                 print(f"downloaded {len(binary_content)} bytes")
             except Exception as e:
                 print(f"Error saving file: {str(e)}")
 
-        elif args[0] == "upload":
-            if len(args) < 2:
+        elif command == "upload":
+            parts = cmd.split(maxsplit=1)
+            if len(parts) != 2:
                 print("Usage: upload <filename>")
                 return
-            filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
-
+            filename = parts[1].replace("\ ", " ")
             # Compute local file hash
             try:
                 with open(filename, 'rb') as f:

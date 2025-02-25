@@ -11,6 +11,7 @@ import subprocess
 import os
 import base64
 from common import *
+import shlex
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -49,15 +50,14 @@ def handshake(lsock: LineSocket, secret: str):
 
 def handle_cd(lsock, args):
     try:
-        os.chdir(args[1])
+        os.chdir(shlex.split(args)[0])
         lsock.send(str(pathlib.Path.cwd()))
     except Exception as e:
         lsock.send(f"cd: {str(e)}")
 
 def handle_cat(lsock, args):
-    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
-        with open(filename, 'rb') as f:
+        with open(shlex.split(args)[0], 'rb') as f:
             content = f.read()
             lsock.send(base64.b64encode(content).decode('ascii'))
             lsock.send("#")
@@ -68,9 +68,8 @@ def handle_cat(lsock, args):
 
 
 def handle_sha256(lsock, args):
-    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
-        with open(filename, 'rb') as f:
+        with open(shlex.split(args)[0], 'rb') as f:
             content = f.read()
             digest = compute_sha256(content)
             lsock.send(digest)
@@ -80,10 +79,9 @@ def handle_download(lsock, args):
     if len(args) < 2:
         lsock.send("ERROR: Usage: download <filename>")
         return
-    filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
     try:
         # First send hash
-        with open(filename, 'rb') as f:
+        with open(shlex.split(args)[0], 'rb') as f:
             content = f.read()
             digest = compute_sha256(content)
             lsock.send(digest)
@@ -91,7 +89,7 @@ def handle_download(lsock, args):
         # Wait for client decision
         decision = lsock.recv()
         if decision == "SKIP":
-            return  # Client has matching file, no need to send content
+            return  # Client has matching file no need to send content
 
         # Send the actual content
         lsock.send(base64.b64encode(content).decode('ascii'))
@@ -103,12 +101,11 @@ def handle_upload(lsock, args):
     try:
         # Get client's file hash
         client_hash = lsock.recv()
-        
+        filename= shlex.split(args)[0]
         # Check if file exists and compare hashes
-        filename = ' '.join(arg.strip() for arg in args[1:]).replace("\\", "")
         print(f'writing: {filename}')
         try:
-            with open(filename, 'rb') as f:
+            with open(shlex.split(args)[0], 'rb') as f:
                 content = f.read()
                 server_hash = compute_sha256(content)
                 if server_hash == client_hash:
@@ -130,7 +127,7 @@ def handle_upload(lsock, args):
         
         # Save file
         binary_content = base64.b64decode(content)
-        with open(args[1], 'wb') as f:
+        with open(filename.split("/")[-1], 'wb') as f:
             f.write(binary_content)
         lsock.send("OK")
     except Exception as e:
@@ -138,31 +135,35 @@ def handle_upload(lsock, args):
 
 def execute_command(lsock: LineSocket, cmd):
     dbg(f"executing command {repr(cmd)}")
-    args = cmd.split()
-    if not args:
-        lsock.send("empty line? really?")
-        return
+    parts = cmd.split(maxsplit=1)
+    command = parts[0] if parts else ""
+    args = parts[1] if len(parts) > 1 else ""
 
     try:
-        if args[0] == "ls":
-            output = subprocess.run(["ls"]+args[1:], capture_output=True)
+        if command == "ls":
+            # If args contain spaces handle them carefully
+            ls_cmd = ["ls"]
+            if args:
+                ls_cmd.extend(shlex.split(args))
+            
+            output = subprocess.run(ls_cmd, capture_output=True)
             stdout = output.stdout.decode("ascii", "ignore").split("\n")
             stderr = output.stderr.decode("ascii", "ignore").split("\n")
             all = stdout + stderr + ["---"]
             all = [line for line in all if len(line)]
             for line in all:
                 lsock.send(line)
-        elif args[0] == "pwd":
+        elif command == "pwd":
             lsock.send(str(pathlib.Path.cwd()))
-        elif args[0] == "cd":
+        elif command == "cd":
             handle_cd(lsock, args)
-        elif args[0] == "cat":
+        elif command == "cat":
             handle_cat(lsock, args)
-        elif args[0] == "sha256":
+        elif command == "sha256":
             handle_sha256(lsock, args)
-        elif args[0] == "download":
+        elif command == "download":
             handle_download(lsock, args)
-        elif args[0] == "upload":
+        elif command == "upload":
             handle_upload(lsock, args)
         else:
             lsock.send(f"unknown command {cmd}")
