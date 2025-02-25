@@ -12,9 +12,9 @@
 
 ### 1. **Secure Handshake with SHA256**
 
-## The server and client establish a secure connection using a shared secret (SECRET526) verified via a SHA256 challenge-response protocol. When a client connects, the server generates an 8-character random challenge and sends it to the client. The client appends the shared secret to this challenge, computes its SHA256 hash, and returns it to the server. The server then compares this hash with its own computation of the challenge + secret. If they match, the handshake succeeds, and communication proceeds.
+The server and client establish a secure connection using a shared secret (SECRET526) verified via a SHA256 challenge-response protocol. When a client connects, the server generates an 8-character random challenge and sends it to the client. The client appends the shared secret to this challenge, computes its SHA256 hash, and returns it to the server. The server then compares this hash with its own computation of the challenge + secret. If they match, the handshake succeeds, and communication proceeds.
 
-### 2. **Command **
+### 2. Supported Commands
 
 #### **pwd**
 
@@ -65,11 +65,11 @@ The cat command retrieves the contents of a file on the server. The server reads
 
 -   **Usage**: `cat <filename>`
 -   **Example**:
-    `bash
+    ```bash
     > cat weird2.txt
-This file has filename that's tough to handle.
-'weird2.txt
-    `
+    This file has filename that's tough to handle.
+    'weird2.txt
+    ```
 
 #### **sha256**
 
@@ -110,19 +110,19 @@ The upload command mirrors the download process but in reverse. The client compu
 
 ---
 
-### 3. **Smart File Transfer Mechanism**
+**Smart File Transfer Mechanism**
 
 Both download and upload commands leverage SHA256 hashes to determine whether a file transfer is necessary. By comparing hashes, the system avoids transferring files that already exist and match on both ends. This optimization is particularly useful for large files or slow network connections. Additionally, all file transfers use Base64 encoding to preserve binary data integrity, ensuring that files like images, executables, and compressed archives are transferred without corruption.
 
 ---
 
-### 4. **Protocol Design**
+**Protocol Design**
 
 The client and server communicate using a simple text-based protocol with clear delimiters. Commands and responses are sent line-by-line, with special markers like # and --- to signal the end of content. For example, when listing directory contents with ls, the server sends each line followed by --- to indicate completion. Similarly, file contents are sent in Base64-encoded chunks terminated by #. Error handling is integrated into the protocol. If a command fails (e.g., invalid directory, permission denied), the server sends an error message (e.g., ERROR: Permission denied), which the client displays to the user.
 
 ---
 
-### 5. **Security and Environment Variables**
+**Security and Environment Variables**
 
 There are multiple options to source the secret to the code: - Secret is sourced from `SECRET526` environment variable, a file `.secret526`, or hardcoded when running the command. - Example configuration:
 `bash
@@ -132,7 +132,7 @@ There are multiple options to source the secret to the code: - Secret is sourced
 
 ---
 
-### 6. **Testing Unusual Filenames**
+**Testing Unusual Filenames**
 
 -   **Examples Tested**:
     -   `weird .txt` (with space)
@@ -142,7 +142,7 @@ There are multiple options to source the secret to the code: - Secret is sourced
 
 ---
 
-### 8. **Usage Examples**
+**Usage Examples**
 
 #### **Client Interaction**
 
