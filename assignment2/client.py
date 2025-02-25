@@ -67,6 +67,7 @@ def handle_command(lsock: LineSocket, cmd: str):
                 sys.stdout.buffer.write(binary_content)
             except Exception as e:
                 print(content)
+            print()
                 
         elif command == "sha256":
             lsock.send(cmd)
