@@ -79,7 +79,7 @@ def handle_command(lsock: LineSocket, cmd: str):
                 print("Usage: download <filename>")
                 return
 
-            filename = parts[1].replace("\ "," ")
+            filename = parts[1].replace("\\ "," ")
             lsock.send(cmd)  # Send original command as is
 
             # First receive the hash
@@ -132,7 +132,7 @@ def handle_command(lsock: LineSocket, cmd: str):
             if len(parts) != 2:
                 print("Usage: upload <filename>")
                 return
-            filename = parts[1].replace("\ ", " ")
+            filename = parts[1].replace("\\ ", " ")
             # Compute local file hash
             try:
                 with open(filename, 'rb') as f:
