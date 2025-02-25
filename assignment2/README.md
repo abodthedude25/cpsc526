@@ -118,7 +118,7 @@ Both download and upload commands leverage SHA256 hashes to determine whether a 
 
 **Protocol Design**
 
-The client and server communicate using a simple text-based protocol with clear delimiters. Commands and responses are sent line-by-line, with special markers like # and --- to signal the end of content. For example, when listing directory contents with ls, the server sends each line followed by --- to indicate completion. Similarly, file contents are sent in Base64-encoded chunks terminated by #. Error handling is integrated into the protocol. If a command fails (e.g., invalid directory, permission denied), the server sends an error message (e.g., ERROR: Permission denied), which the client displays to the user.
+The client and server communicate using a hybrid text-based protocol with clear delimiters as well as base64 encoding for uploads and downloads. Commands and responses are sent line-by-line, with special markers like # and --- to signal the end of content. For example, when listing directory contents with ls, the server sends each line followed by --- to indicate completion. Similarly, file contents are sent in Base64-encoded chunks terminated by #. Error handling is integrated into the protocol. If a command fails (e.g., invalid directory, permission denied), the server sends an error message (e.g., ERROR: Permission denied), which the client displays to the user.
 
 ---
 
@@ -159,7 +159,6 @@ downloaded 10240 bytes
 download skipped - local file matches remote file
 > sha256 empty.dat
 1a79a4d60de6718e8e5b326e338ae533
-> exit
 ```
 
 #### **Server Log**
