@@ -62,9 +62,11 @@ def handle_command(lsock: LineSocket, cmd: str):
                     break
                 content += line
             try:
-                print(base64.b64decode(content).decode('utf-8'))
+                print(content)
             except UnicodeDecodeError:
                 print("Binary file content not displayed")
+            except Exception as e:
+                print(f'cat: {str(e)}')
         
         elif args[0] == "sha256":
             lsock.send(cmd)

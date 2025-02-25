@@ -47,7 +47,7 @@ def handshake(lsock: LineSocket, secret: str):
     lsock.send("OK")
     dbg("handshake success")
 
-def handle_cd(lsock, args):
+def handle_cd(lsock, args): 
     try:
         os.chdir(args[1])
         lsock.send(str(pathlib.Path.cwd()))
@@ -57,9 +57,9 @@ def handle_cd(lsock, args):
 def handle_cat(lsock, args):
     filename = ' '.join(arg.strip() for arg in args[1:]).replace("'", "")   
     try:
-        with open(filename, 'rb') as f:
+        with open(filename, 'r') as f:
             content = f.read()
-            lsock.send(base64.b64encode(content).decode('ascii'))
+            lsock.send(content)
             lsock.send("#")
     except Exception as e:
         print(e)
@@ -82,7 +82,7 @@ def handle_download(lsock, args):
 
     try:
         # First send hash
-        with open(args[1], 'rb') as f:
+        with open(args[1], 'r') as f:
             content = f.read()
             digest = compute_sha256(content)
             lsock.send(digest)
@@ -93,7 +93,7 @@ def handle_download(lsock, args):
             return  # Client has matching file, no need to send content
 
         # Send the actual content
-        lsock.send(base64.b64encode(content).decode('ascii'))
+        lsock.send(content)
         lsock.send("#")
     except Exception as e:
         lsock.send(f"ERROR: {str(e)}")
