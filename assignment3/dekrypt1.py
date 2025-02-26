@@ -36,14 +36,35 @@ def key_stretch(password: str, salt: bytes, key_len: int) -> bytes:
 
 
 def decrypt_stdin(password: str):
-    # your code goes here
-    pass
+    raw = sys.stdin.buffer.read(32)
+    if len(raw) < 32:
+        # Not enough data to even contain IV+salt
+        return  # or raise an error
 
+    iv = raw[:16]
+    salt = raw[16:32]
+
+    # Derive the AES-128 key using PBKDF2 same as in enkrypt.py
+    key = key_stretch(password, salt, 16)
+
+    # Create decryptor object with AES CTR using the same key & IV
+    decryptor = Cipher(algorithms.AES(key), modes.CTR(iv)).decryptor()
+
+    # Decrypt the rest of the input in chunks, writing plaintext to stdout
+    while True:
+        block = sys.stdin.buffer.read(4096)
+        if not block:
+            break
+        pblock = decryptor.update(block)
+        sys.stdout.buffer.write(pblock)
+
+    # Finalize the decryption
+    pblock = decryptor.finalize()
+    sys.stdout.buffer.write(pblock)
 
 def main():
     args = parse_args()
     decrypt_stdin(args.password)
-
 
 if __name__ == "__main__":
     main()

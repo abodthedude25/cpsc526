@@ -68,8 +68,8 @@ def encrypt(password: str, nonce: int | None = None, debug: bool = False):
         salt = os.urandom(16)
     else:
         print("Warning: non-random nonces are dangerous!", file=sys.stderr)
-        iv = nonce.to_bytes(32)[:16]
-        salt = nonce.to_bytes(32)[16:]
+        iv = nonce.to_bytes(32, 'big')[:16]
+        salt = nonce.to_bytes(32, 'big')[16:]
 
     # convert password to a key using key stretching
     key = key_stretch(password, salt, 16)
