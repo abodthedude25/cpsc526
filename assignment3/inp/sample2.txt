@@ -1,0 +1,7 @@
+The gambler's fallacy assumes that an event for which a future likelihood
+can be measured had the same likelihood of happening once it has already
+occurred. Thus, if someone had already tossed 9 coins and each has come up
+heads, people tend to assume that the likelihood of a tenth toss also being
+heads is 1023 to 1 against (which it was before the first coin was tossed)
+when in fact the chance of the tenth head is 50% (assuming the coin is
+unbiased).
