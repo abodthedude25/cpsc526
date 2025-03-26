@@ -197,11 +197,12 @@ class IRCBot:
         try:
             new_host, new_port_str = target.split(":")
             new_port = int(new_port_str)
-            
+            # Create a new IRCBot instance for the new host and port
             new_bot = IRCBot(new_host, new_port, self.channel, self.secret)
+            # Copy the seen nonces and command count to the new bot
             new_bot.seen_nonces = self.seen_nonces.copy()
             new_bot.command_count = self.command_count
-            
+            # Start new bot
             new_bot.run()
             sys.exit(1)
         except Exception as e:
@@ -217,6 +218,7 @@ class IRCBot:
             return f"-attack {self.nick} FAIL invalid-target"
         
         try:
+            # Attempt to create a socket connection to the target host and port
             with socket.create_connection((host, port), timeout=3) as s:
                 attack_line = f"{self.nick} {nonce}\n"
                 s.sendall(attack_line.encode('utf-8'))
@@ -247,8 +249,11 @@ def main() -> None:
     channel = sys.argv[2]
     secret = sys.argv[3]
     
-    bot = IRCBot(host, port, channel, secret)
-    bot.run()
+    bot = IRCBot(host, port, channel, secret) #create bot class
+    bot.run() 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nexiting program")

