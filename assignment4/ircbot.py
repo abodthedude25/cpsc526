@@ -8,12 +8,12 @@ import random
 import string
 from typing import Set, Optional, Tuple, Dict, List, Any
 
-def compute_mac(nonce: str, secret: str) -> str:
+def computeMac(nonce: str, secret: str) -> str:
     combo = nonce + secret
     sha_val = hashlib.sha256(combo.encode('utf-8')).hexdigest()
     return sha_val[:8]
 
-def generate_random_nick() -> str:
+def nickGen() -> str:
     prefix = "bot_"
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     return prefix + suffix
@@ -24,7 +24,7 @@ class IRCBot:
         self.port: int = port
         self.channel: str = channel
         self.secret: str = secret
-        self.nick: str = generate_random_nick()
+        self.nick: str = nickGen()
         self.seen_nonces: Set[str] = set()
         self.command_count: int = 0
         self.connected: bool = False
@@ -61,7 +61,7 @@ class IRCBot:
                         self.send(f"JOIN #{self.channel}")
                         self.connected = True
                         
-                        self.send_message(f"-joined {self.nick}")
+                        self.sendMsg(f"-joined {self.nick}")
                         print(f"Connected to {self.host}:{self.port} and joined #{self.channel}")
                         return True
             
@@ -77,7 +77,7 @@ class IRCBot:
         if self.socket:
             self.socket.sendall(f"{message}\r\n".encode('utf-8'))
     
-    def send_message(self, message: str) -> None:
+    def sendMsg(self, message: str) -> None:
         self.send(f"PRIVMSG #{self.channel} :{message}")
     
     def run(self) -> None:
@@ -142,17 +142,17 @@ class IRCBot:
                 time.sleep(5)
     
     def handle_command(self, message: str) -> None:
-        parts = message.split()
-        if len(parts) < 3:
+        tokens = message.split()
+        if len(tokens) < 3:
             return
         
-        nonce, mac, command = parts[0], parts[1], parts[2]
-        args = parts[3:]
+        nonce, mac, command = tokens[0], tokens[1], tokens[2]
+        args = tokens[3:]
         
         if nonce in self.seen_nonces:
             return
         
-        computed_mac = compute_mac(nonce, self.secret)
+        computed_mac = computeMac(nonce, self.secret)
         if computed_mac != mac:
             return
         
@@ -169,10 +169,10 @@ class IRCBot:
             self._handle_move(args[0])
     
     def _handle_status(self) -> None:
-        self.send_message(f"-status {self.nick} {self.command_count}")
+        self.sendMsg(f"-status {self.nick} {self.command_count}")
     
     def _handle_shutdown(self) -> None:
-        self.send_message(f"-shutdown {self.nick}")
+        self.sendMsg(f"-shutdown {self.nick}")
         if self.socket:
             try:
                 self.socket.close()
@@ -182,10 +182,10 @@ class IRCBot:
     
     def _handle_attack(self, target: str, nonce: str) -> None:
         attack_status = self.do_attack(target, nonce)
-        self.send_message(attack_status)
+        self.sendMsg(attack_status)
     
     def _handle_move(self, target: str) -> None:
-        self.send_message(f"-move {self.nick}")
+        self.sendMsg(f"-move {self.nick}")
         
         if self.socket:
             try:

