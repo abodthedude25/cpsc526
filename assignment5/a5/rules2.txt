@@ -1,0 +1,9 @@
+in deny 1.2.3.4/32 55
+ # rule below should never be applied, because it is
+ # 100% shadowed by the previous rule
+in drop 1.2.3.4/32 55
+ # this rule is not entirely shadowed by the previous one
+in drop 1.2.3.4/32 55,56
+ # few more rules
+out accept 200.200.200.200/25 1,2,3 established
+out drop 1.2.3.4/1 *

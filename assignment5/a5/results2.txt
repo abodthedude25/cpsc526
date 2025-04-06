@@ -1,0 +1,8 @@
+deny(1)      in  1.2.3.4         55    0
+drop(6)      in  1.2.3.4         56    0
+default()    in  1.2.3.4         57    0
+default()    out 200.200.200.127 2     1
+accept(8)    out 200.200.200.128 2     1
+default()    out 200.200.200.128 2     0
+drop(9)      out 127.20.3.5      10    0
+default()    out 128.20.3.5      10    0

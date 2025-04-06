@@ -1,0 +1,11 @@
+# packets to test first 3 rules
+in 1.2.3.4 55 0
+in 1.2.3.4 56 0
+in 1.2.3.4 57 0
+# packets to test the last 2 rules  
+out  200.200.200.127 2  1 
+out  200.200.200.128 2  1 
+out  200.200.200.128 2  0  
+out  127.20.3.5      10 0 
+out  128.20.3.5      10 0  
+
